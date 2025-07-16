@@ -1,0 +1,4 @@
+{
+    "command": "npm run test",
+    "working_directory": "/home/kavia/workspace/code-generation/voice-persona-ai-7cdff3c0/mimic_ai_frontend"
+}
