@@ -143,58 +143,132 @@ export default function ChatPane({ userVoiceProfile: propUserVoiceProfile, onNew
 
   /**
    * PUBLIC_INTERFACE
-   * Generates an AI reply that is similar in meaning, style, and emotion to the user's input,
-   * but NOT a direct copy—introducing paraphrasing or subtle variation, matching personality.
-   * This is implemented as a stub for future backend integration.
+   * Generates a uniquely original AI reply inspired by the user's personality, style, tone, and emotion.
+   * The output is not a paraphrase or mirror, but a fresh statement that aligns with the core persona traits.
+   * 
+   * === EXTENSION POINT for backend persona/prompt-based LLM integration ===
+   * 
+   * To extend: Replace (or augment) this function to call a backend persona API, passing recent dialog history,
+   * learned persona profile, and current emotion, returning a fully generated, context-aware AI reply.
    * 
    * @param {string} userText - The user's input message
    * @param {Object} emotionResult - The emotion result associated with the user input
-   * @returns {string} - The AI-mimicked variant of the user message
+   * @returns {string} - A unique, personality-inspired AI response
    */
   function generatePersonalityReply(userText, emotionResult) {
-    // === EXTENSION POINT for backend persona adaptation ===
-    // For now, implements a basic stub with paraphrasing/variation rules
-    // (future: replace with API call that generates a persona-adapted variant)
+    // === Persona Adaptation Logic: Stub Version ===
+    //
+    // GOAL: Synthesize *original* responses that echo the enrolled user's persona/style,
+    // while never simply mirroring, copying, or directly paraphrasing the user's actual message.
+    // This is a placeholder for a real backend-powered persona LLM service.
+    //
+    // --- Logic for this STUB version ---
+    //  - Pick behaviors and verbal cues from a fake "persona" trait (e.g., friendly, formal, witty, etc.)
+    //  - Always create a *novel* (never copied or restated) sentence or insight, possibly referencing
+    //    the user's last message theme, but re-framing it entirely.
+    //  - Emojis/tone are driven from analyzed emotion.
+    //  - Whenever possible, change perspective or expand; add unique commentary or questions.
 
-    // Paraphrasing rules: 
-    // - If question, reflect question back with a slight twist
-    // - If exclamation, soften or intensify
-    // - Mirror emotion in emoji
-    // - Small restatements, synonym use, affirmation, or "as you said,..." prefix
+    // Demo profile: simulate a few persona styles (could be dynamic with a real backend)
+    const personaStyles = [
+      {
+        name: 'Friendly & Supportive',
+        opening: [
+          "Absolutely! Here's a thought:",
+          "I hear you loud and clear –",
+          "Let's explore this together:",
+          "That made me think:",
+        ],
+        followup: [
+          "Do you want to talk more about it?",
+          "What would you do differently next time?",
+          "That's just my perspective – what's yours?",
+          "How does that make you feel?",
+          "I'm always here to listen!",
+        ]
+      },
+      {
+        name: 'Analytical & Calm',
+        opening: [
+          "Interesting point. Statistically speaking,",
+          "If we break it down,",
+          "Taking a step back,",
+          "It appears that ",
+        ],
+        followup: [
+          "Would you agree with that assessment?",
+          "That's worth further investigation.",
+          "Let's consider possible alternatives.",
+          "What do you think are the next steps?",
+          "Is there a specific aspect you want to focus on?",
+        ]
+      },
+      {
+        name: 'Playful & Witty',
+        opening: [
+          "You know, that totally sparks my circuits!",
+          "Haha, love that energy!",
+          "Let me toss an idea your way:",
+          "Off the top of my virtual head:",
+        ],
+        followup: [
+          "Care to challenge my robotic wisdom?",
+          "I double-click on that notion!",
+          "Ping me with your wildest thoughts.",
+          "That's my story and I'm sticking to it. How about you?",
+        ]
+      },
+    ];
 
-    // 1. Prevent identical parroting
-    let aiText = userText.trim();
+    // Naive persona/trait pick (future: from enrolled profile or recent behavior)
+    const userProfileIndex = (userVoiceProfile && userVoiceProfile.name)
+      ? (userVoiceProfile.name.charCodeAt(0) % personaStyles.length)
+      : (userText && userText.length ? userText.charCodeAt(0) % personaStyles.length : 0);
+    const persona = personaStyles[userProfileIndex];
 
-    // 2. Mirror emotional content (very naive: echo with sentiment phrases)
-    const emo = (emotionResult && emotionResult.dominant) ? emotionResult.dominant.toLowerCase() : "";
+    // Emotion-driven cue
     const emoji = (emotionResult && emotionResult.emoji) ? emotionResult.emoji : "";
 
-    // 3. Simple transformation logic for demo purposes
-    if (aiText.length < 3) {
-      aiText = "Could you tell me a bit more?";
-    } else if (aiText.endsWith("?")) {
-      // Reflective question ("That's a great question" + restate)
-      aiText = "That's a great question! " + aiText.replace(/\?+$/, "") + "? " + emoji;
-    } else if (/^(wow|amazing|brilliant|incredible)[.!]*$/i.test(aiText.split(" ")[0])) {
-      aiText = "I can feel the excitement! " + aiText;
-    } else if (/^(angry|hate|stupid|idiot|dumb|terrible|mad).*/i.test(aiText)) {
-      aiText = "I sense some frustration. " + aiText.replace(/(angry|hate|stupid|idiot|dumb|terrible|mad)/gi, "upset") + (emoji ? ` ${emoji}` : "");
-    } else if (/.*\b(love|enjoy|happy|great|fun|nice)\b.*/i.test(aiText)) {
-      aiText = "That sounds wonderful! " + aiText + (emoji ? ` ${emoji}` : "");
-    } else if (/^i (feel|am) (sad|depressed|down|blue)/i.test(aiText)) {
-      aiText = "I hear you—know that it’s okay to feel this way sometimes. " + emoji;
-    } else if (/[.?!]$/.test(aiText)) {
-      aiText = "As you said: " + aiText;
-    } else if (aiText.length > 16) {
-      aiText = "I see—" + aiText.charAt(0).toUpperCase() + aiText.slice(1) + (emoji ? ` ${emoji}` : ".");
-    } else {
-      aiText = "You mentioned: " + aiText + (emoji ? ` ${emoji}` : ".");
+    // Use parts of the user message only to inform topic (never copy)
+    // Simple: Extract a theme keyword for theme reference (stub logic)
+    const words = userText.match(/\b\w{4,}\b/g) || [];
+    const keyword = words.length > 0 ? words[Math.floor(Math.random() * words.length)] : "";
+    const themeHint = keyword ? `Something about "${keyword.toLowerCase()}" stands out to me.` : "";
+
+    // Compose an original sentence inspired by persona and emotion
+    const opening = persona.opening[Math.floor(Math.random() * persona.opening.length)];
+    const followup = persona.followup[Math.floor(Math.random() * persona.followup.length)];
+
+    // Demo uniqueness: Each output is always new, topic-inspired, never a clone
+    // This can optionally be augmented with generated content from a backend later
+    // --- Real backend would take: user history, persona traits, current emotional summary ---
+
+    // If the user is silent or terse
+    if (!userText.trim() || userText.trim().length < 3) {
+      return `${opening} I'm here whenever you're ready to chat. ${emoji} ${followup}`;
     }
 
-    // Optionally randomize wording very slightly for demo
-    if (Math.random() > 0.7) aiText = aiText + " (just mimicking!)";
+    // If question, *answer* or expand in a new direction
+    if (userText.trim().endsWith("?")) {
+      return `${opening} that's a great question. ${themeHint} Here's how I'd see it: Sometimes it's best to stay curious and open-minded. ${emoji} ${followup}`;
+    }
 
-    return aiText;
+    // If the message is strongly emotional, amplify/mitigate with persona style
+    if (emotionResult && emotionResult.dominant === "Excited") {
+      return `${opening} I can feel your excitement radiate! Let's ride that energy and see where it takes us. ${emoji} ${followup}`;
+    }
+    if (emotionResult && emotionResult.dominant === "Frustrated") {
+      return `${opening} It sounds a bit tough right now, but we can work through it together! ${emoji} ${followup}`;
+    }
+    if (emotionResult && emotionResult.dominant === "Calm") {
+      return `${opening} Your calm presence is refreshing. Maybe now's the perfect time for a new idea? ${emoji} ${followup}`;
+    }
+    if (emotionResult && emotionResult.dominant === "Happy") {
+      return `${opening} I'm vibing with your positivity! ${themeHint} ${emoji} ${followup}`;
+    }
+
+    // Default: original reflection/commentary
+    return `${opening} ${themeHint} Let me know your thoughts. ${emoji} ${followup}`;
   }
 
   // PUBLIC_INTERFACE
