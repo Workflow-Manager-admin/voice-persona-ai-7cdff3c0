@@ -86,17 +86,21 @@ export default function ChatPane({ userVoiceProfile: propUserVoiceProfile, onNew
   const handleInputChange = (e) => setInput(e.target.value);
 
   // PUBLIC_INTERFACE
+  // Modified: Disables any content filtering, censoring, or rewriting:
+  // The AI will repeat, parrot, and mirror all incoming user messages verbatim (no filtering, no restrictions),
+  // regardless of language, tone, or content (including hostile, manipulative, or negative behavior).
   const handleSend = () => {
+    // No content filtering or sanitization ― send as-is including blank/hostile/negative/any content (except blank input for UX)
     if (input.trim() === "") return;
-    const userText = input.trim();
-    // Simulate emotion analysis with stub
+    const userText = input; // preserve exactly as typed with all whitespace & non-ASCII chars
+    // Simulate emotion analysis with stub (unfiltered, reflects actual tone)
     const emotionResult = analyzeEmotion(userText);
     setCurrentEmotion(emotionResult);
 
     // Propagate emotion result to parent for global analytics
     if (onNewEmotionResult) onNewEmotionResult(emotionResult);
 
-    // User message, now with live emotion
+    // User message: sent AS IS, no sanitization/censorship
     const userMsg = {
       role: "user",
       text: userText,
@@ -104,13 +108,13 @@ export default function ChatPane({ userVoiceProfile: propUserVoiceProfile, onNew
     };
     setMessages((prev) => [...prev, userMsg]);
 
-    // Parrot response - AI mimics user almost identically with emotion result
+    // AI mimics EXACT user input (behavior + language), no filters or editorializing
     setTimeout(() => {
       setMessages((prev) => [
         ...prev,
         {
           role: "ai",
-          // Parrot back the input almost identically
+          // Repeat exactly what was observed
           text: userText,
           emotion: emotionResult.emoji,
           mimicked: true,
