@@ -141,10 +141,64 @@ export default function ChatPane({ userVoiceProfile: propUserVoiceProfile, onNew
   // PUBLIC_INTERFACE
   const handleInputChange = (e) => setInput(e.target.value);
 
+  /**
+   * PUBLIC_INTERFACE
+   * Generates an AI reply that is similar in meaning, style, and emotion to the user's input,
+   * but NOT a direct copy—introducing paraphrasing or subtle variation, matching personality.
+   * This is implemented as a stub for future backend integration.
+   * 
+   * @param {string} userText - The user's input message
+   * @param {Object} emotionResult - The emotion result associated with the user input
+   * @returns {string} - The AI-mimicked variant of the user message
+   */
+  function generatePersonalityReply(userText, emotionResult) {
+    // === EXTENSION POINT for backend persona adaptation ===
+    // For now, implements a basic stub with paraphrasing/variation rules
+    // (future: replace with API call that generates a persona-adapted variant)
+
+    // Paraphrasing rules: 
+    // - If question, reflect question back with a slight twist
+    // - If exclamation, soften or intensify
+    // - Mirror emotion in emoji
+    // - Small restatements, synonym use, affirmation, or "as you said,..." prefix
+
+    // 1. Prevent identical parroting
+    let aiText = userText.trim();
+
+    // 2. Mirror emotional content (very naive: echo with sentiment phrases)
+    const emo = (emotionResult && emotionResult.dominant) ? emotionResult.dominant.toLowerCase() : "";
+    const emoji = (emotionResult && emotionResult.emoji) ? emotionResult.emoji : "";
+
+    // 3. Simple transformation logic for demo purposes
+    if (aiText.length < 3) {
+      aiText = "Could you tell me a bit more?";
+    } else if (aiText.endsWith("?")) {
+      // Reflective question ("That's a great question" + restate)
+      aiText = "That's a great question! " + aiText.replace(/\?+$/, "") + "? " + emoji;
+    } else if (/^(wow|amazing|brilliant|incredible)[.!]*$/i.test(aiText.split(" ")[0])) {
+      aiText = "I can feel the excitement! " + aiText;
+    } else if (/^(angry|hate|stupid|idiot|dumb|terrible|mad).*/i.test(aiText)) {
+      aiText = "I sense some frustration. " + aiText.replace(/(angry|hate|stupid|idiot|dumb|terrible|mad)/gi, "upset") + (emoji ? ` ${emoji}` : "");
+    } else if (/.*\b(love|enjoy|happy|great|fun|nice)\b.*/i.test(aiText)) {
+      aiText = "That sounds wonderful! " + aiText + (emoji ? ` ${emoji}` : "");
+    } else if (/^i (feel|am) (sad|depressed|down|blue)/i.test(aiText)) {
+      aiText = "I hear you—know that it’s okay to feel this way sometimes. " + emoji;
+    } else if (/[.?!]$/.test(aiText)) {
+      aiText = "As you said: " + aiText;
+    } else if (aiText.length > 16) {
+      aiText = "I see—" + aiText.charAt(0).toUpperCase() + aiText.slice(1) + (emoji ? ` ${emoji}` : ".");
+    } else {
+      aiText = "You mentioned: " + aiText + (emoji ? ` ${emoji}` : ".");
+    }
+
+    // Optionally randomize wording very slightly for demo
+    if (Math.random() > 0.7) aiText = aiText + " (just mimicking!)";
+
+    return aiText;
+  }
+
   // PUBLIC_INTERFACE
-  // The AI will repeat, parrot, and mirror all incoming user messages verbatim (no filtering, no restrictions),
-  // regardless of language, tone, or content (including hostile, manipulative, or negative behavior).
-  // Each new message IMMEDIATELY triggers a UI update of EmotionAnalytics to match the latest emotion.
+  // Now: AI mimics, paraphrases, and varies the reply, matching observed style, not parroting exactly.
   const handleSend = () => {
     // Send as-is, except block empty for UX
     if (input.trim() === "") return;
@@ -164,13 +218,13 @@ export default function ChatPane({ userVoiceProfile: propUserVoiceProfile, onNew
     };
     setMessages((prev) => [...prev, userMsg]);
 
-    // 4. AI parrots the user (no filter, mimics observed behavior/hostility/etc)
+    // 4. AI creates a similar, but not identical, response (mocked for now)
     setTimeout(() => {
       setMessages((prev) => [
         ...prev,
         {
           role: "ai",
-          text: userText,
+          text: generatePersonalityReply(userText, emotionResult),
           emotion: emotionResult.emoji,
           mimicked: true,
         },
