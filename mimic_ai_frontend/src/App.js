@@ -22,6 +22,17 @@ function App() {
   // App-level voice profile state (for user voice cloning)
   const [userVoiceProfile, setUserVoiceProfile] = useState(null);
 
+  // New: App-level emotion analytics (updates per message from chat)
+  const [emotionState, setEmotionState] = useState({
+    emotions: [
+      { label: "Happy", value: 0.85, color: "#21E6C1" },
+      { label: "Calm", value: 0.72, color: "#2F80ED" },
+      { label: "Excited", value: 0.44, color: "#F9A826" },
+      { label: "Frustrated", value: 0.10, color: "#FF5454" },
+    ],
+    feedback: "😊 Positive mood detected! Conversation is adaptive.",
+  });
+
   React.useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
   }, [theme]);
@@ -62,6 +73,17 @@ function App() {
     setVoiceSetupOpen(false);
   };
 
+  // New: callback to receive new emotion analysis result from ChatPane
+  function handleEmotionResult(newEmotionResult) {
+    setEmotionState({
+      emotions:
+        Array.isArray(newEmotionResult.emotions)
+          ? newEmotionResult.emotions
+          : emotionState.emotions,
+      feedback: newEmotionResult.feedback || "",
+    });
+  }
+
   return (
     <div className="main-dashboard">
       {/* Navigation Sidebar */}
@@ -80,12 +102,18 @@ function App() {
         <div className="dashboard-main">
           {/* Left: Chat and conversation */}
           <div className="dashboard-chat-pane">
-            <ChatPane userVoiceProfile={userVoiceProfile} />
+            <ChatPane
+              userVoiceProfile={userVoiceProfile}
+              onNewEmotionResult={handleEmotionResult}
+            />
           </div>
 
           {/* Right: Analytics and emotion/behavior panels */}
           <div className="dashboard-panels">
-            <EmotionAnalytics />
+            <EmotionAnalytics
+              emotions={emotionState.emotions}
+              feedback={emotionState.feedback}
+            />
             <BehaviorSummary />
           </div>
         </div>
