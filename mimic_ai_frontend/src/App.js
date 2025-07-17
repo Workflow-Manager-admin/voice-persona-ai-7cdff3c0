@@ -1,47 +1,81 @@
-import React, { useState, useEffect } from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React, { useState } from "react";
+import "./App.css";
+import "./index.css";
+import Sidebar from "./components/Sidebar";
+import ChatPane from "./components/ChatPane";
+import EmotionAnalytics from "./components/EmotionAnalytics";
+import BehaviorSummary from "./components/BehaviorSummary";
+import VoiceSetupModal from "./components/VoiceSetupModal";
+import UserProfile from "./components/UserProfile";
 
-// PUBLIC_INTERFACE
+/**
+ * PUBLIC_INTERFACE
+ * Main App component for Mimic.AI-M1 dashboard.
+ *
+ * Provides the modern minimal dashboard layout, navigation sidebar, chat pane, analytics, and user interaction modals.
+ */
 function App() {
-  const [theme, setTheme] = useState('light');
+  // theme state (light/dark, with persistent effect)
+  const [theme, setTheme] = useState("light");
+  const [voiceSetupOpen, setVoiceSetupOpen] = useState(false);
+  const [userProfileOpen, setUserProfileOpen] = useState(false);
 
-  // Effect to apply theme to document element
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
+  React.useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
   }, [theme]);
 
   // PUBLIC_INTERFACE
-  const toggleTheme = () => {
-    setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light');
-  };
+  const toggleTheme = () =>
+    setTheme((prev) => (prev === "light" ? "dark" : "light"));
+
+  // PUBLIC_INTERFACE
+  const openVoiceSetup = () => setVoiceSetupOpen(true);
+
+  // PUBLIC_INTERFACE
+  const closeVoiceSetup = () => setVoiceSetupOpen(false);
+
+  // PUBLIC_INTERFACE
+  const openUserProfile = () => setUserProfileOpen(true);
+
+  // PUBLIC_INTERFACE
+  const closeUserProfile = () => setUserProfileOpen(false);
 
   return (
-    <div className="App">
-      <header className="App-header">
-        <button 
-          className="theme-toggle" 
-          onClick={toggleTheme}
-          aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
-        >
-          {theme === 'light' ? '🌙 Dark' : '☀️ Light'}
-        </button>
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <p>
-          Current theme: <strong>{theme}</strong>
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div className="main-dashboard">
+      {/* Navigation Sidebar */}
+      <Sidebar
+        onVoiceSetup={openVoiceSetup}
+        onUserProfile={openUserProfile}
+        theme={theme}
+        toggleTheme={toggleTheme}
+      />
+
+      {/* Central Content Panel */}
+      <div className="dashboard-content">
+        <div className="dashboard-header">
+          <h1 className="app-title">Mimic.AI-M1</h1>
+        </div>
+        <div className="dashboard-main">
+          {/* Left: Chat and conversation */}
+          <div className="dashboard-chat-pane">
+            <ChatPane />
+          </div>
+
+          {/* Right: Analytics and emotion/behavior panels */}
+          <div className="dashboard-panels">
+            <EmotionAnalytics />
+            <BehaviorSummary />
+          </div>
+        </div>
+      </div>
+
+      {/* Modals */}
+      {voiceSetupOpen && (
+        <VoiceSetupModal onClose={closeVoiceSetup} />
+      )}
+      {userProfileOpen && (
+        <UserProfile onClose={closeUserProfile} />
+      )}
     </div>
   );
 }

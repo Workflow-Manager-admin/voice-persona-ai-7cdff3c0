@@ -1,0 +1,59 @@
+/* ------ Voice Setup Modal Styles ------ */
+.modal-overlay {
+  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+  background: var(--modal-bg, rgba(35,44,65,.68));
+  z-index: 99;
+  display: flex; align-items: center; justify-content: center;
+}
+.modal-card {
+  background: #fff;
+  border-radius: 20px;
+  padding: 36px 28px 25px 29px;
+  width: 410px;
+  box-shadow: 0 14px 48px #c0e8ff30;
+  position: relative;
+  max-width: 93vw;
+  min-width: 290px;
+  animation: modalIn 0.23s cubic-bezier(.33,1.63,.5,1) 1;
+}
+@keyframes modalIn {
+  from { transform: scale(0.94) translateY(32px); opacity: 0.61;}
+  to { transform: scale(1) translateY(0); opacity: 1;}
+}
+[data-theme="dark"] .modal-card { background: #23262e; color: #fff; }
+.modal-close-btn {
+  position: absolute; top: 14px; right: 17px;
+  font-size: 2.0em;
+  background: none; border: none; color: #bbb;
+  cursor: pointer;
+  padding: 2px 7px;
+  border-radius: 8px;
+}
+.modal-close-btn:hover { color: var(--danger);}
+h2 { font-size: 1.42em; margin-bottom: 18px;}
+.modal-label { display: block; margin-bottom: 13px; }
+.modal-input {
+  width: 100%; padding: 8px 11px; border: 1.5px solid #bbbbbb38;
+  border-radius: 7px; font-size: 1.05em; margin-top: 3px;
+  background: #f7fafd;
+}
+[data-theme="dark"] .modal-input { background: #353949; color: #fff; border-color: #60638517; }
+.voice-record-row { display: flex; gap: 10px; margin-bottom: 13px;}
+.voice-rec-btn, .voice-test-btn, .voice-play-btn {
+  padding: 8px 15px; border-radius: 7px; border: none;
+  background: var(--primary); color: #fff; font-size: 1.02em;
+  font-weight: 600; cursor: pointer; transition: background 0.22s;
+}
+
+.voice-test-btn { background: var(--secondary);}
+.voice-rec-btn:active, .voice-test-btn:active, .voice-play-btn:active {
+  background: var(--accent);
+}
+.voice-clone-feedback {
+  color: var(--primary);
+  font-weight: 500;
+  display: flex; flex-direction: column; gap: 8px; margin-bottom: 6px;
+}
+.voice-uploaded-msg { margin-left: 10px; font-size: 0.98em;}
+.modal-footer { margin-top: 17px; color: #94a7e6; font-size: 0.89em;}
+[data-theme="dark"] .modal-footer { color: #b0daf7;}

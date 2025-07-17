@@ -1,0 +1,43 @@
+/* ------ User Profile Modal Styles ------ */
+.modal-overlay {
+  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+  background: var(--modal-bg, rgba(34,39,64,0.67));
+  z-index: 180;
+  display: flex; align-items: center; justify-content: center;
+}
+.modal-card {
+  background: #fff;
+  border-radius: 20px;
+  padding: 34px 28px 25px 29px;
+  width: 380px; min-width: 260px; max-width: 95vw;
+  box-shadow: 0 12px 46px #c0e8ff26;
+  position: relative;
+  animation: modalIn 0.25s cubic-bezier(.41,1.53,.42,1.11) 1;
+}
+@keyframes modalIn {
+  from { transform: scale(0.92) translateY(22px); opacity: 0.63;}
+  to { transform: scale(1) translateY(0); opacity: 1;}
+}
+[data-theme="dark"] .modal-card { background: #2C323B; color: #fff; }
+.modal-close-btn { position: absolute; top: 13px; right: 17px;
+  font-size: 1.7em; background: none; border: none; color: #bbb; cursor: pointer; border-radius: 8px;}
+.modal-close-btn:hover { color: var(--danger);}
+h2 { font-size: 1.28em; margin-bottom: 16px;}
+.profile-fields { margin-bottom: 12px;}
+.profile-row { display: flex; flex-direction: column; margin-bottom: 10px;}
+.profile-row label { margin-bottom: 2px; font-size: 0.98em; font-weight: 500;}
+.modal-input { width: 100%; padding: 8px 11px; border: 1.3px solid #bbbbbb26; border-radius: 7px; font-size: 1em;}
+[data-theme="dark"] .modal-input { background: #232738; color: #fff; border-color: #60638544;}
+.profile-actions {
+  margin-top: 15px;
+  display: flex; flex-direction: row; gap: 14px;
+}
+.modal-action-btn {
+  background: var(--primary);
+  color: #fff;
+  border: none; border-radius: 7px; padding: 8px 26px;
+  font-weight: 600; font-size: 1em;
+  transition: background 0.21s;
+  cursor: pointer;
+}
+.modal-action-btn:hover { background: var(--secondary);}

@@ -1,0 +1,37 @@
+/* ------ Emotion Analytics Styles ------ */
+.emotion-analytics {
+  display: flex;
+  flex-direction: column;
+  min-height: 180px;
+}
+
+.emotion-bars { display: flex; flex-direction: column; gap: 10px; margin-bottom: 9px; }
+.emotion-bar-row { display: flex; align-items: center; gap: 7px;}
+.emotion-label { min-width: 73px; font-size: .99em; }
+.emotion-bar-outer {
+  height: 19px;
+  background: #e7e8f9;
+  border-radius: 7px;
+  flex: 1;
+  margin: 0 6px;
+  box-shadow: 0 1px 5px #81fabc2a;
+}
+[data-theme="dark"] .emotion-bar-outer { background: #222333; }
+.emotion-bar-inner {
+  height: 100%;
+  border-radius: 7px;
+  transition: width 0.4s;
+  box-shadow: 0 1px 6px #31eca81b;
+}
+.emotion-val { font-size: .97em; min-width: 31px;}
+
+.emotion-feedback {
+  margin-top: 10px;
+  padding: 6px 0 3px 2px;
+  color: var(--primary); font-weight: 550;
+  font-size: .95em;
+}
+
+.emotion-tip {
+  padding: 2px 11px 2px 0;
+}
