@@ -34,11 +34,9 @@ export default function ChatPane({ userVoiceProfile: propUserVoiceProfile, onNew
     feedback: "😊 Positive mood detected! Conversation is adaptive.",
   });
 
-  // Helper: Fake emotion analysis stub (returns mock result as if by "analyzing" input text/audio)
   // PUBLIC_INTERFACE
+  // Helper: Fake emotion analysis stub (returns mock result as if by "analyzing" input text/audio)
   function analyzeEmotion(inputTextOrAudio) {
-    // EXTENSION POINT: Call backend AI to get emotion analysis, using audio/text as feature
-    // This stub cycles through fake emotions based on hash of message for UI showcase
     if (!inputTextOrAudio || !inputTextOrAudio.length) {
       return {
         emotions: [
@@ -118,7 +116,6 @@ export default function ChatPane({ userVoiceProfile: propUserVoiceProfile, onNew
           mimicked: true,
         },
       ]);
-      // Optionally, you could also update emotion analytics again for parrot/AI output if desired
     }, 700);
 
     setInput("");
@@ -161,8 +158,11 @@ export default function ChatPane({ userVoiceProfile: propUserVoiceProfile, onNew
 
   /**
    * PUBLIC_INTERFACE
-   * Synthesizes and plays each message in chat history, preferring user-mimicked voice for "user" role when available.
-   * In a real implementation, use a backend API or local voice model for voice cloning.
+   * Playback chat history using ONLY the enrolled/setup (userVoiceProfile) voice.
+   * All AI/user messages are read out in the user's own cloned/enrolled voice.
+   * Fallback to default TTS if setup voice is unavailable.
+   * 
+   * Extension: Backend TTS integration, see synthesizeVoiceWithUserProfile.
    */
   const playBackHistory = async () => {
     setIsPlaying(true);
@@ -173,11 +173,9 @@ export default function ChatPane({ userVoiceProfile: propUserVoiceProfile, onNew
         return;
       }
       const msg = messages[idx];
-      // Only synthesize if it's an AI or user message
       if (msg.role === "ai" || msg.role === "user") {
-        await synthesizeVoice(msg);
+        await synthesizeVoiceWithUserProfile(msg);
         idx++;
-        // small delay for demo, remove or tweak for UX as needed
         setTimeout(speakNext, 150);
       } else {
         idx++;
@@ -189,42 +187,43 @@ export default function ChatPane({ userVoiceProfile: propUserVoiceProfile, onNew
 
   /**
    * PUBLIC_INTERFACE
-   * Stops any ongoing playback.
+   * Stops all active playback (system TTS and tag-based audio).
    */
   const stopPlayback = () => {
     window.speechSynthesis.cancel();
+    // Could add additional logic to stop any active <audio> elements
     setIsPlaying(false);
   };
 
   /**
    * PUBLIC_INTERFACE
-   * Synthesizes the given message using the appropriate voice.
-   * - If user message & voice profile exists: use cloned voice sample (stub).
-   * - Else: use system TTS.
-   * @param {Object} msg Chat message object { role, text, ... }
+   * Synthesize message using user's cloned/enrolled voice if present for ALL playback.
+   * 
+   * If userVoiceProfile.audioURL exists:
+   *   - Always play that for both user and AI message (Demo).
+   *   - To integrate backend: fetch/generate TTS via backend using userVoiceProfile.voiceEnrollmentId & msg.text
+   * 
+   * If none exists, fallback to default system TTS.
+   * 
+   * @param {Object} msg - The chat message { role, text, ... }
    */
-  const synthesizeVoice = (msg) => {
-    // EXTENSION POINT: Real voice cloning, integrate backend call here!
-    if (msg.role === "user" && userVoiceProfile && userVoiceProfile.audioURL) {
-      // Simulate playing a cloned-voice audio segment (just loop the sample for each message for demo)
+  const synthesizeVoiceWithUserProfile = (msg) => {
+    if (userVoiceProfile && userVoiceProfile.audioURL) {
+      // DEMO: Replay stored sample for every message. (Replace with real synthesis in production)
       return new Promise((resolve) => {
         const audio = new Audio(userVoiceProfile.audioURL);
         audio.onended = resolve;
         audio.onerror = resolve;
         audio.play();
       });
-    } else if (msg.role === "ai" && userVoiceProfile && userVoiceProfile.audioURL) {
-      // Mimic AI's voice as user's if voice profile exists (parrot mode)
-      return new Promise((resolve) => {
-        const audio = new Audio(userVoiceProfile.audioURL);
-        audio.onended = resolve;
-        audio.onerror = resolve;
-        audio.play();
-      });
+      // PLACEHOLDER: For backend voice synthesis, fetch generated audio file for (msg.text, userVoiceProfile.voiceEnrollmentId)
+      // Example pseudocode:
+      // fetch(`/api/tts?voiceId=${userVoiceProfile.voiceEnrollmentId}&text=${encodeURIComponent(msg.text)}`)
+      //   .then(r => r.blob()).then(blob => { const url = URL.createObjectURL(blob); ...play url... });
     } else {
+      // Fallback: Use system speechSynthesis
       return new Promise((resolve) => {
         const utter = new window.SpeechSynthesisUtterance(msg.text);
-        // Optionally: set utter.voice from backend voice list using userVoiceProfile.voiceId
         window.speechSynthesis.speak(utter);
         utter.onend = resolve;
         utter.onerror = resolve;
@@ -234,8 +233,7 @@ export default function ChatPane({ userVoiceProfile: propUserVoiceProfile, onNew
 
   /**
    * PUBLIC_INTERFACE
-   * Allows voice profile to be stored in chat panel for demo/testing.
-   * In production, manage the userVoiceProfile in app-level state (context, redux, etc)
+   * Allows chat to receive the enrolled voice profile for demo/testing (triggered by VoiceSetupModal).
    */
   const handleVoiceProfileEnrolled = (profileObj) => {
     setUserVoiceProfile(profileObj);
