@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import "./App.css";
 import "./index.css";
 import Sidebar from "./components/Sidebar";
@@ -19,10 +19,26 @@ function App() {
   const [theme, setTheme] = useState("light");
   const [voiceSetupOpen, setVoiceSetupOpen] = useState(false);
   const [userProfileOpen, setUserProfileOpen] = useState(false);
+  // App-level voice profile state (for user voice cloning)
+  const [userVoiceProfile, setUserVoiceProfile] = useState(null);
 
   React.useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
   }, [theme]);
+
+  // Listen for event-based requests to open voice setup modal from elsewhere
+  React.useEffect(() => {
+    const handler = (e) => {
+      // Optionally, allow event.detail.onEnroll to update voice profile directly
+      setVoiceSetupOpen(true);
+      if (e.detail && typeof e.detail.onEnroll === "function") {
+        // special: parent wiring for manual tests, unused in default app flow
+        // we'll call setUserVoiceProfile after enrollment modal closes
+      }
+    };
+    window.addEventListener("openVoiceSetup", handler);
+    return () => window.removeEventListener("openVoiceSetup", handler);
+  }, []);
 
   // PUBLIC_INTERFACE
   const toggleTheme = () =>
@@ -39,6 +55,12 @@ function App() {
 
   // PUBLIC_INTERFACE
   const closeUserProfile = () => setUserProfileOpen(false);
+
+  // Called when user completes voice enrollment
+  const handleVoiceProfileEnrolled = (profileObj) => {
+    setUserVoiceProfile(profileObj);
+    setVoiceSetupOpen(false);
+  };
 
   return (
     <div className="main-dashboard">
@@ -58,7 +80,7 @@ function App() {
         <div className="dashboard-main">
           {/* Left: Chat and conversation */}
           <div className="dashboard-chat-pane">
-            <ChatPane />
+            <ChatPane userVoiceProfile={userVoiceProfile} />
           </div>
 
           {/* Right: Analytics and emotion/behavior panels */}
@@ -71,7 +93,10 @@ function App() {
 
       {/* Modals */}
       {voiceSetupOpen && (
-        <VoiceSetupModal onClose={closeVoiceSetup} />
+        <VoiceSetupModal
+          onClose={closeVoiceSetup}
+          onVoiceProfileEnrolled={handleVoiceProfileEnrolled}
+        />
       )}
       {userProfileOpen && (
         <UserProfile onClose={closeUserProfile} />

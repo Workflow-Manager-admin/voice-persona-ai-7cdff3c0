@@ -4,6 +4,8 @@ import "./ChatPane.css";
 /**
  * PUBLIC_INTERFACE
  * ChatPane: Handles real-time voice and text chat, conversation simulation, emotion feedback, and playback controls.
+ * Integrates user voice cloning for playback (uses mimicked voice if available). 
+ * All backend voice integration points are indicated for extension.
  */
 export default function ChatPane() {
   const [messages, setMessages] = useState([
@@ -12,6 +14,10 @@ export default function ChatPane() {
   const [input, setInput] = useState("");
   const [isListening, setIsListening] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+
+  // Store the enrolled user voice profile for mimicked playback
+  // In a real implementation, integrate with global/app state, context, or persistent user profile from backend.
+  const [userVoiceProfile, setUserVoiceProfile] = useState(null);
   const recognitionRef = useRef(null);
 
   // PUBLIC_INTERFACE
@@ -69,24 +75,28 @@ export default function ChatPane() {
     if (recognitionRef.current) recognitionRef.current.stop();
   };
 
-  // PUBLIC_INTERFACE
-  const playBackHistory = () => {
+  /**
+   * PUBLIC_INTERFACE
+   * Synthesizes and plays each message in chat history, preferring user-mimicked voice for "user" role when available.
+   * In a real implementation, use a backend API or local voice model for voice cloning.
+   */
+  const playBackHistory = async () => {
     setIsPlaying(true);
     let idx = 0;
-    function speakNext() {
+
+    async function speakNext() {
       if (idx >= messages.length) {
         setIsPlaying(false);
         return;
       }
       const msg = messages[idx];
+
+      // Only synthesize if it's an AI or user message
       if (msg.role === "ai" || msg.role === "user") {
-        const utter = new window.SpeechSynthesisUtterance(msg.text);
-        // Minimal voice cloning simulation (real implementation uses cloned voice)
-        window.speechSynthesis.speak(utter);
-        utter.onend = () => {
-          idx++;
-          speakNext();
-        };
+        await synthesizeVoice(msg);
+        idx++;
+        // small delay for demo, remove or tweak for UX as needed
+        setTimeout(speakNext, 150);
       } else {
         idx++;
         speakNext();
@@ -95,10 +105,53 @@ export default function ChatPane() {
     speakNext();
   };
 
-  // PUBLIC_INTERFACE
+  /**
+   * PUBLIC_INTERFACE
+   * Stops any ongoing playback.
+   */
   const stopPlayback = () => {
     window.speechSynthesis.cancel();
     setIsPlaying(false);
+  };
+
+  /**
+   * PUBLIC_INTERFACE
+   * Synthesizes the given message using the appropriate voice.
+   * - If user message & voice profile exists: use cloned voice (stub: call backend, stream, or download/wav).
+   * - Else: use default TTS.
+   * @param {Object} msg Chat message object { role, text, ... }
+   */
+  const synthesizeVoice = (msg) => {
+    // EXTENSION POINT: Real voice cloning, integrate backend call here!
+    // For now, stub logic: 
+    // - If user voice profile exists and message is from user, simulate with audio sample if available.
+    // - Otherwise, use system TTS.
+    if (msg.role === "user" && userVoiceProfile && userVoiceProfile.audioURL) {
+      // Simulate playing a cloned-voice audio segment (just loop the sample for each message for demo)
+      return new Promise((resolve) => {
+        const audio = new Audio(userVoiceProfile.audioURL);
+        audio.onended = resolve;
+        audio.onerror = resolve;
+        audio.play();
+      });
+    } else {
+      return new Promise((resolve) => {
+        const utter = new window.SpeechSynthesisUtterance(msg.text);
+        // Optionally: set utter.voice from backend voice list using userVoiceProfile.voiceId
+        window.speechSynthesis.speak(utter);
+        utter.onend = resolve;
+        utter.onerror = resolve;
+      });
+    }
+  };
+
+  /**
+   * PUBLIC_INTERFACE
+   * Allows voice profile to be stored in chat panel for demo/testing.
+   * In production, manage the userVoiceProfile in app-level state (context, redux, etc)
+   */
+  const handleVoiceProfileEnrolled = (profileObj) => {
+    setUserVoiceProfile(profileObj);
   };
 
   return (
@@ -110,6 +163,7 @@ export default function ChatPane() {
             className="chat-act-btn"
             onClick={isListening ? stopListening : startListening}
             aria-label="Toggle voice input"
+            disabled={isPlaying}
           >
             {isListening ? "🛑 Stop" : "🎙️ Voice"}
           </button>
@@ -120,6 +174,20 @@ export default function ChatPane() {
           >
             {isPlaying ? "⏹️ Stop" : "▶️ Playback"}
           </button>
+          {/* Demo: Show enroll/setup button if profile not set */}
+          {!userVoiceProfile && (
+            <button
+              className="chat-act-btn"
+              onClick={() => {
+                window.dispatchEvent(
+                  new CustomEvent("openVoiceSetup", { detail: { onEnroll: handleVoiceProfileEnrolled } })
+                );
+              }}
+              style={{marginLeft: 10}}
+            >
+              🎤 Setup Voice
+            </button>
+          )}
         </div>
       </div>
       <div className="chat-messages">
