@@ -37,6 +37,7 @@ export default function ChatPane({ userVoiceProfile: propUserVoiceProfile, onNew
   // PUBLIC_INTERFACE
   // Helper: Fake emotion analysis stub (returns mock result as if by "analyzing" input text/audio)
   function analyzeEmotion(inputTextOrAudio) {
+    // Demo rules-based stub for emotion detection (keywords, length, punctuation)
     if (!inputTextOrAudio || !inputTextOrAudio.length) {
       return {
         emotions: [
@@ -50,6 +51,61 @@ export default function ChatPane({ userVoiceProfile: propUserVoiceProfile, onNew
         feedback: "😊 Positive mood detected! Conversation is adaptive.",
       };
     }
+    const txt = inputTextOrAudio.toLowerCase();
+    // Simple pseudo sentiment: try to demo happy, excited, frustrated, calm
+    if (txt.includes("!") || txt.includes("wow") || txt.includes("amazing") || txt.includes("brilliant") || txt.includes("love")) {
+      return {
+        emotions: [
+          { label: "Excited", value: 0.87, color: "#F9A826" },
+          { label: "Happy", value: 0.62, color: "#21E6C1" },
+          { label: "Calm", value: 0.19, color: "#2F80ED" },
+          { label: "Frustrated", value: 0.04, color: "#FF5454" },
+        ],
+        dominant: "Excited",
+        emoji: "😃",
+        feedback: "🔥 Energetic and engaged. Let's keep it rolling.",
+      };
+    }
+    if (txt.includes("angry") || txt.includes("hate") || txt.includes("stupid") || txt.includes("idiot") || txt.includes("dumb") || txt.includes("terrible") || txt.includes("mad")) {
+      return {
+        emotions: [
+          { label: "Frustrated", value: 0.81, color: "#FF5454" },
+          { label: "Calm", value: 0.22, color: "#2F80ED" },
+          { label: "Excited", value: 0.14, color: "#F9A826" },
+          { label: "Happy", value: 0.07, color: "#21E6C1" },
+        ],
+        dominant: "Frustrated",
+        emoji: "😠",
+        feedback: "😕 Stress spikes detected! Try a short mindful breath.",
+      };
+    }
+    if (txt.includes("calm") || txt.includes("quiet") || txt.includes("peace") || txt.includes("zen") || txt.includes("relax")) {
+      return {
+        emotions: [
+          { label: "Calm", value: 0.91, color: "#2F80ED" },
+          { label: "Happy", value: 0.33, color: "#21E6C1" },
+          { label: "Frustrated", value: 0.02, color: "#FF5454" },
+          { label: "Excited", value: 0.13, color: "#F9A826" },
+        ],
+        dominant: "Calm",
+        emoji: "😌",
+        feedback: "🌊 A calming vibe in the air!",
+      };
+    }
+    if (txt.includes("sad") || txt.includes("cry") || txt.includes("depressed") || txt.includes("down")) {
+      return {
+        emotions: [
+          { label: "Frustrated", value: 0.38, color: "#FF5454" },
+          { label: "Calm", value: 0.66, color: "#2F80ED" },
+          { label: "Happy", value: 0.11, color: "#21E6C1" },
+          { label: "Excited", value: 0.03, color: "#F9A826" },
+        ],
+        dominant: "Calm",
+        emoji: "😐",
+        feedback: "It's okay to feel down. Take your time to recover.",
+      };
+    }
+    // Default: basic cycling mock
     const base = inputTextOrAudio.length + inputTextOrAudio.charCodeAt(0) % 13;
     const choices = [
       { emotions: [
@@ -86,21 +142,21 @@ export default function ChatPane({ userVoiceProfile: propUserVoiceProfile, onNew
   const handleInputChange = (e) => setInput(e.target.value);
 
   // PUBLIC_INTERFACE
-  // Modified: Disables any content filtering, censoring, or rewriting:
   // The AI will repeat, parrot, and mirror all incoming user messages verbatim (no filtering, no restrictions),
   // regardless of language, tone, or content (including hostile, manipulative, or negative behavior).
+  // Each new message IMMEDIATELY triggers a UI update of EmotionAnalytics to match the latest emotion.
   const handleSend = () => {
-    // No content filtering or sanitization ― send as-is including blank/hostile/negative/any content (except blank input for UX)
+    // Send as-is, except block empty for UX
     if (input.trim() === "") return;
-    const userText = input; // preserve exactly as typed with all whitespace & non-ASCII chars
-    // Simulate emotion analysis with stub (unfiltered, reflects actual tone)
+    const userText = input; // preserve as typed
+    // 1. Simulate emotion analysis and update internal ChatPane emotion state
     const emotionResult = analyzeEmotion(userText);
     setCurrentEmotion(emotionResult);
 
-    // Propagate emotion result to parent for global analytics
+    // 2. Propagate emotion result to parent for global analytics (this triggers EmotionAnalytics to update)
     if (onNewEmotionResult) onNewEmotionResult(emotionResult);
 
-    // User message: sent AS IS, no sanitization/censorship
+    // 3. Append user message (with matched emotion)
     const userMsg = {
       role: "user",
       text: userText,
@@ -108,13 +164,12 @@ export default function ChatPane({ userVoiceProfile: propUserVoiceProfile, onNew
     };
     setMessages((prev) => [...prev, userMsg]);
 
-    // AI mimics EXACT user input (behavior + language), no filters or editorializing
+    // 4. AI parrots the user (no filter, mimics observed behavior/hostility/etc)
     setTimeout(() => {
       setMessages((prev) => [
         ...prev,
         {
           role: "ai",
-          // Repeat exactly what was observed
           text: userText,
           emotion: emotionResult.emoji,
           mimicked: true,
