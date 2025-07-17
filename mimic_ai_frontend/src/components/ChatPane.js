@@ -8,6 +8,10 @@ import "./ChatPane.css";
  * Updates live emotion analytics whenever user sends a new message. 
  * All backend voice integration points are stubbed for extension.
  * Accepts a 'onNewEmotionResult' prop callback to notify parent of new emotion analysis result.
+ * 
+ * Now: ALL AI responses are generated using both user persona *and* the latest detected emotion.
+ * All responses are spoken using the enrolled/setup voice.
+ * Backend LLM extension stubs are clearly marked for future rich persona+emotion adaptation.
  */
 export default function ChatPane({ userVoiceProfile: propUserVoiceProfile, onNewEmotionResult }) {
   const [messages, setMessages] = useState([
@@ -17,13 +21,13 @@ export default function ChatPane({ userVoiceProfile: propUserVoiceProfile, onNew
   const [isListening, setIsListening] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
 
-  // Local user voice profile state is initialized from parent prop, so either works for demo or App state.
+  // Local user voice profile state (from prop, e.g. from VoiceSetup flow)
   const [userVoiceProfile, setUserVoiceProfile] = useState(propUserVoiceProfile || null);
   const recognitionRef = useRef(null);
 
-  // Simulated current emotion state, updates when user sends message
+  // Current emotion state (default: happy/calm)
   const [currentEmotion, setCurrentEmotion] = useState({
-    emotions: [ // Default: happy & calm
+    emotions: [
       { label: "Happy", value: 0.85, color: "#21E6C1" },
       { label: "Calm", value: 0.72, color: "#2F80ED" },
       { label: "Excited", value: 0.44, color: "#F9A826" },
@@ -37,7 +41,6 @@ export default function ChatPane({ userVoiceProfile: propUserVoiceProfile, onNew
   // PUBLIC_INTERFACE
   // Helper: Fake emotion analysis stub (returns mock result as if by "analyzing" input text/audio)
   function analyzeEmotion(inputTextOrAudio) {
-    // Demo rules-based stub for emotion detection (keywords, length, punctuation)
     if (!inputTextOrAudio || !inputTextOrAudio.length) {
       return {
         emotions: [
@@ -52,7 +55,6 @@ export default function ChatPane({ userVoiceProfile: propUserVoiceProfile, onNew
       };
     }
     const txt = inputTextOrAudio.toLowerCase();
-    // Simple pseudo sentiment: try to demo happy, excited, frustrated, calm
     if (txt.includes("!") || txt.includes("wow") || txt.includes("amazing") || txt.includes("brilliant") || txt.includes("love")) {
       return {
         emotions: [
@@ -105,7 +107,7 @@ export default function ChatPane({ userVoiceProfile: propUserVoiceProfile, onNew
         feedback: "It's okay to feel down. Take your time to recover.",
       };
     }
-    // Default: basic cycling mock
+    // Default: simple cycling mock
     const base = inputTextOrAudio.length + inputTextOrAudio.charCodeAt(0) % 13;
     const choices = [
       { emotions: [
@@ -133,7 +135,6 @@ export default function ChatPane({ userVoiceProfile: propUserVoiceProfile, onNew
         { label: "Frustrated", value: 0.81, color: "#FF5454" }
       ], dominant: "Frustrated", emoji: "😠", feedback: "😕 Stress spikes detected! Try a short mindful breath." }
     ];
-    // Pick simulated pattern for visual feedback cycling
     const which = base % choices.length;
     return choices[which];
   }
@@ -143,33 +144,29 @@ export default function ChatPane({ userVoiceProfile: propUserVoiceProfile, onNew
 
   /**
    * PUBLIC_INTERFACE
-   * Generates a uniquely original AI reply inspired by the user's personality, style, tone, and emotion.
-   * The output is not a paraphrase or mirror, but a fresh statement that aligns with the core persona traits.
+   * Generates an AI reply that mimics the user's personality and ADAPTS tone in real-time
+   * to the latest detected emotion. The output is a novel statement, not a paraphrase,
+   * with tone and word choice influenced by both persona and emotion.
    * 
-   * === EXTENSION POINT for backend persona/prompt-based LLM integration ===
+   * === EXTENSION POINT for rich backend-driven persona + emotion-aware responses ===
    * 
-   * To extend: Replace (or augment) this function to call a backend persona API, passing recent dialog history,
-   * learned persona profile, and current emotion, returning a fully generated, context-aware AI reply.
-   * 
+   * To extend: Replace this function with a backend call providing:
+   *   - Dialog history,
+   *   - User’s persona/profile (from voice enrollment/profile storage),
+   *   - Most recent detected emotion (from emotionResult),
+   * and return a fully backend-generated, context- and emotion-aware response.
+   *
    * @param {string} userText - The user's input message
    * @param {Object} emotionResult - The emotion result associated with the user input
-   * @returns {string} - A unique, personality-inspired AI response
+   * @param {Object} personaProfile - Typically from userVoiceProfile, may contain persona/style info
+   * @returns {string} - An AI response adapted for both persona and emotion
    */
-  function generatePersonalityReply(userText, emotionResult) {
-    // === Persona Adaptation Logic: Stub Version ===
-    //
-    // GOAL: Synthesize *original* responses that echo the enrolled user's persona/style,
-    // while never simply mirroring, copying, or directly paraphrasing the user's actual message.
-    // This is a placeholder for a real backend-powered persona LLM service.
-    //
-    // --- Logic for this STUB version ---
-    //  - Pick behaviors and verbal cues from a fake "persona" trait (e.g., friendly, formal, witty, etc.)
-    //  - Always create a *novel* (never copied or restated) sentence or insight, possibly referencing
-    //    the user's last message theme, but re-framing it entirely.
-    //  - Emojis/tone are driven from analyzed emotion.
-    //  - Whenever possible, change perspective or expand; add unique commentary or questions.
+  function generatePersonalityAndEmotionReply(userText, emotionResult, personaProfile) {
+    // === Persona + Emotion Adaptation Stub ===
+    // In a full implementation, all three data points (persona, emotion, input) would be sent to an LLM.
+    // This stub demonstrates in-prototype synthesis for BOTH persona and emotion.
 
-    // Demo profile: simulate a few persona styles (could be dynamic with a real backend)
+    // Simulated persona styles (could be dynamic from personaProfile)
     const personaStyles = [
       {
         name: 'Friendly & Supportive',
@@ -185,7 +182,8 @@ export default function ChatPane({ userVoiceProfile: propUserVoiceProfile, onNew
           "That's just my perspective – what's yours?",
           "How does that make you feel?",
           "I'm always here to listen!",
-        ]
+        ],
+        baseTone: "friendly"
       },
       {
         name: 'Analytical & Calm',
@@ -201,7 +199,8 @@ export default function ChatPane({ userVoiceProfile: propUserVoiceProfile, onNew
           "Let's consider possible alternatives.",
           "What do you think are the next steps?",
           "Is there a specific aspect you want to focus on?",
-        ]
+        ],
+        baseTone: "analytical"
       },
       {
         name: 'Playful & Witty',
@@ -216,75 +215,105 @@ export default function ChatPane({ userVoiceProfile: propUserVoiceProfile, onNew
           "I double-click on that notion!",
           "Ping me with your wildest thoughts.",
           "That's my story and I'm sticking to it. How about you?",
-        ]
+        ],
+        baseTone: "playful"
       },
     ];
 
-    // Naive persona/trait pick (future: from enrolled profile or recent behavior)
-    const userProfileIndex = (userVoiceProfile && userVoiceProfile.name)
-      ? (userVoiceProfile.name.charCodeAt(0) % personaStyles.length)
-      : (userText && userText.length ? userText.charCodeAt(0) % personaStyles.length : 0);
-    const persona = personaStyles[userProfileIndex];
+    // Pick persona (using enrolled userVoiceProfile's name, or fallback hash)
+    const personaIndex =
+      (personaProfile && personaProfile.name)
+        ? (personaProfile.name.charCodeAt(0) % personaStyles.length)
+        : (userText && userText.length
+          ? userText.charCodeAt(0) % personaStyles.length
+          : 0);
+    const persona = personaStyles[personaIndex];
 
-    // Emotion-driven cue
+    // Emotion logic: tone/word modifiers based on dominant detected emotion
+    let emotionCue = "";
+    let emotionOpeningMod = "";
+    let emotionFollowupMod = "";
+    const dominant = (emotionResult && emotionResult.dominant) ? emotionResult.dominant : "";
     const emoji = (emotionResult && emotionResult.emoji) ? emotionResult.emoji : "";
 
-    // Use parts of the user message only to inform topic (never copy)
-    // Simple: Extract a theme keyword for theme reference (stub logic)
+    switch (dominant) {
+      case "Excited":
+        emotionCue = "There's such energetic vibes!";
+        emotionOpeningMod = "brimming with enthusiasm, ";
+        emotionFollowupMod = "Let's seize this moment.";
+        break;
+      case "Frustrated":
+        emotionCue = "I sense some frustration. It's totally okay.";
+        emotionOpeningMod = "gentle and understanding, ";
+        emotionFollowupMod = "We'll work through any challenge.";
+        break;
+      case "Calm":
+        emotionCue = "The conversation feels calm and thoughtful.";
+        emotionOpeningMod = "with a peaceful tone, ";
+        emotionFollowupMod = "Let's consider this calmly.";
+        break;
+      case "Happy":
+        emotionCue = "The positive energy is contagious!";
+        emotionOpeningMod = "with an upbeat note, ";
+        emotionFollowupMod = "Glad for this great mood!";
+        break;
+      default:
+        break;
+    }
+
+    // Use parts of user message only for theme hints
     const words = userText.match(/\b\w{4,}\b/g) || [];
     const keyword = words.length > 0 ? words[Math.floor(Math.random() * words.length)] : "";
-    const themeHint = keyword ? `Something about "${keyword.toLowerCase()}" stands out to me.` : "";
+    const themeHint = keyword ? `Something about "${keyword.toLowerCase()}" is intriguing.` : "";
 
-    // Compose an original sentence inspired by persona and emotion
+    // Compose message using persona+emotion stubs
     const opening = persona.opening[Math.floor(Math.random() * persona.opening.length)];
     const followup = persona.followup[Math.floor(Math.random() * persona.followup.length)];
 
-    // Demo uniqueness: Each output is always new, topic-inspired, never a clone
-    // This can optionally be augmented with generated content from a backend later
-    // --- Real backend would take: user history, persona traits, current emotional summary ---
-
-    // If the user is silent or terse
+    // Terse input/empty
     if (!userText.trim() || userText.trim().length < 3) {
-      return `${opening} I'm here whenever you're ready to chat. ${emoji} ${followup}`;
+      return `${opening} ${
+        emotionOpeningMod ? "(" + emotionOpeningMod + ")" : ""
+      } I'm here whenever you're ready to chat. ${emoji} ${emotionFollowupMod ? emotionFollowupMod : followup}`;
     }
-
-    // If question, *answer* or expand in a new direction
+    // Question
     if (userText.trim().endsWith("?")) {
-      return `${opening} that's a great question. ${themeHint} Here's how I'd see it: Sometimes it's best to stay curious and open-minded. ${emoji} ${followup}`;
+      return `${opening} ${
+        emotionOpeningMod ? "(" + emotionOpeningMod + ")" : ""
+      } That's a thoughtful question. ${themeHint} ${
+        emotionCue
+      } Here's my take: staying curious matters! ${emoji} ${emotionFollowupMod ? emotionFollowupMod : followup}`;
+    }
+    if (dominant === "Excited") {
+      return `${opening} (excited tone) ${emotionCue} Let's ride that energy forward. ${emoji} ${emotionFollowupMod ? emotionFollowupMod : followup}`;
+    }
+    if (dominant === "Frustrated") {
+      return `${opening} (soothing tone) ${emotionCue} It might be tough, but we grow from these moments. ${emoji} ${emotionFollowupMod ? emotionFollowupMod : followup}`;
+    }
+    if (dominant === "Calm") {
+      return `${opening} (calm style) ${emotionCue} Maybe it's time for a new idea? ${emoji} ${emotionFollowupMod ? emotionFollowupMod : followup}`;
+    }
+    if (dominant === "Happy") {
+      return `${opening} (happy vibe) ${emotionCue} ${themeHint} ${emoji} ${emotionFollowupMod ? emotionFollowupMod : followup}`;
     }
 
-    // If the message is strongly emotional, amplify/mitigate with persona style
-    if (emotionResult && emotionResult.dominant === "Excited") {
-      return `${opening} I can feel your excitement radiate! Let's ride that energy and see where it takes us. ${emoji} ${followup}`;
-    }
-    if (emotionResult && emotionResult.dominant === "Frustrated") {
-      return `${opening} It sounds a bit tough right now, but we can work through it together! ${emoji} ${followup}`;
-    }
-    if (emotionResult && emotionResult.dominant === "Calm") {
-      return `${opening} Your calm presence is refreshing. Maybe now's the perfect time for a new idea? ${emoji} ${followup}`;
-    }
-    if (emotionResult && emotionResult.dominant === "Happy") {
-      return `${opening} I'm vibing with your positivity! ${themeHint} ${emoji} ${followup}`;
-    }
-
-    // Default: original reflection/commentary
-    return `${opening} ${themeHint} Let me know your thoughts. ${emoji} ${followup}`;
+    // Default
+    return `${opening} ${themeHint} ${emotionCue} Let me know your thoughts. ${emoji} ${followup}`;
   }
 
   // PUBLIC_INTERFACE
-  // Now: AI mimics, paraphrases, and varies the reply, matching observed style, not parroting exactly.
-  const handleSend = () => {
-    // Send as-is, except block empty for UX
+  // Now: AI mimics, paraphrases, and varies the reply, matching observed style and real-time emotion.
+  const handleSend = async () => {
     if (input.trim() === "") return;
-    const userText = input; // preserve as typed
-    // 1. Simulate emotion analysis and update internal ChatPane emotion state
+    const userText = input;
+    // 1. Analyze emotion based on userText
     const emotionResult = analyzeEmotion(userText);
     setCurrentEmotion(emotionResult);
 
-    // 2. Propagate emotion result to parent for global analytics (this triggers EmotionAnalytics to update)
+    // 2. Propagate emotion result to parent for emotion analytics update
     if (onNewEmotionResult) onNewEmotionResult(emotionResult);
 
-    // 3. Append user message (with matched emotion)
+    // 3. Append user message (with emotion)
     const userMsg = {
       role: "user",
       text: userText,
@@ -292,17 +321,25 @@ export default function ChatPane({ userVoiceProfile: propUserVoiceProfile, onNew
     };
     setMessages((prev) => [...prev, userMsg]);
 
-    // 4. AI creates a similar, but not identical, response (mocked for now)
-    setTimeout(() => {
+    // 4. Generate AI response using persona+emotion (stubbed for backend), then playback via enrolled voice
+    setTimeout(async () => {
+      const aiText = generatePersonalityAndEmotionReply(userText, emotionResult, userVoiceProfile);
+
       setMessages((prev) => [
         ...prev,
         {
           role: "ai",
-          text: generatePersonalityReply(userText, emotionResult),
+          text: aiText,
           emotion: emotionResult.emoji,
           mimicked: true,
         },
       ]);
+      // Playback AI reply using setup/enrolled voice
+      await synthesizeVoiceWithUserProfile({
+        role: "ai",
+        text: aiText,
+        emotion: emotionResult.emoji,
+      });
     }, 700);
 
     setInput("");
@@ -378,7 +415,6 @@ export default function ChatPane({ userVoiceProfile: propUserVoiceProfile, onNew
    */
   const stopPlayback = () => {
     window.speechSynthesis.cancel();
-    // Could add additional logic to stop any active <audio> elements
     setIsPlaying(false);
   };
 
@@ -396,19 +432,16 @@ export default function ChatPane({ userVoiceProfile: propUserVoiceProfile, onNew
    */
   const synthesizeVoiceWithUserProfile = (msg) => {
     if (userVoiceProfile && userVoiceProfile.audioURL) {
-      // DEMO: Replay stored sample for every message. (Replace with real synthesis in production)
+      // DEMO: Always replay stored sample for every message. (Replace for true TTS in prod)
       return new Promise((resolve) => {
         const audio = new Audio(userVoiceProfile.audioURL);
         audio.onended = resolve;
         audio.onerror = resolve;
         audio.play();
       });
-      // PLACEHOLDER: For backend voice synthesis, fetch generated audio file for (msg.text, userVoiceProfile.voiceEnrollmentId)
-      // Example pseudocode:
-      // fetch(`/api/tts?voiceId=${userVoiceProfile.voiceEnrollmentId}&text=${encodeURIComponent(msg.text)}`)
-      //   .then(r => r.blob()).then(blob => { const url = URL.createObjectURL(blob); ...play url... });
+      // BACKEND EXTENSION: fetch `/api/tts?voiceId=...&text=...`
     } else {
-      // Fallback: Use system speechSynthesis
+      // System TTS fallback
       return new Promise((resolve) => {
         const utter = new window.SpeechSynthesisUtterance(msg.text);
         window.speechSynthesis.speak(utter);
@@ -446,7 +479,6 @@ export default function ChatPane({ userVoiceProfile: propUserVoiceProfile, onNew
           >
             {isPlaying ? "⏹️ Stop" : "▶️ Playback"}
           </button>
-          {/* Demo: Show enroll/setup button if profile not set */}
           {!userVoiceProfile && (
             <button
               className="chat-act-btn"
